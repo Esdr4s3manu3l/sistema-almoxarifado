@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Editar Setor{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Setor</h5>
+            </div>
+            <div class="card-body bg-light">
+                <form id="formEditarSetor">
+                    <input type="hidden" id="setor_id" value="{{ setor.id }}">
+
+                    <div class="mb-3">
+                        <label for="nome" class="form-label fw-bold">Nome do Setor *</label>
+                        <input type="text" class="form-control border-info" id="nome" required value="{{ setor.nome }}">
+                    </div>
+                    <div class="mb-4">
+                        <label for="secretaria" class="form-label fw-bold">Secretaria Vinculada</label>
+                        <input type="text" class="form-control" id="secretaria" value="{{ setor.secretaria or '' }}">
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/setores/html/cadastro" class="btn btn-outline-secondary px-4">Cancelar</a>
+                        <button type="submit" class="btn btn-info text-white px-5 fw-bold"><i class="bi bi-save"></i> Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('formEditarSetor').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const id = document.getElementById('setor_id').value;
+    const payload = {
+        nome: document.getElementById('nome').value,
+        secretaria: document.getElementById('secretaria').value || null
+    };
+
+    try {
+        const response = await fetch(`/setores/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            alert('Setor atualizado com sucesso!');
+            window.location.href = '/setores/html/cadastro';
+        } else {
+            const erro = await response.json();
+            alert('Erro: ' + JSON.stringify(erro.detail || erro));
+        }
+    } catch (error) {
+        alert('Falha na comunicação com o servidor.');
+    }
+});
+</script>
+{% endblock %}

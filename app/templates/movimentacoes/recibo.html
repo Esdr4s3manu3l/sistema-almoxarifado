@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Termo de Recebimento - {{ mov.id }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Caixa do Documento (Estilo Folha A4) -->
+    <div class="card shadow-lg border-2 border-dark p-4 bg-white" id="folha-termo">
+        
+        <!-- CABEÇALHO INSTITUCIONAL / TIMBRADO -->
+        <div class="text-center border-bottom border-dark pb-3 mb-4">
+            <!-- Espaço para o Brasão ou Logo (Pode trocar a URL ou usar ícone) -->
+            <div class="mb-2">
+                <i class="bi bi-bank2 fs-1 text-secondary"></i>
+            </div>
+            <h4 class="fw-bold text-uppercase m-0">Prefeitura Municipal de Lagoa do Piauí</h4>
+            <h6 class="text-muted m-0">Secretaria Municipal de Administração e Planejamento</h6>
+            <p class="small text-muted m-0">Sistema de Controle de Almoxarifado Central</p>
+        </div>
+
+        <!-- TÍTULO DO DOCUMENTO -->
+        <div class="text-center my-4">
+            <h4 class="fw-bold text-uppercase text-decoration-underline">Termo de Entrega e Recebimento de Materiais</h4>
+            <p class="text-muted small">Comprovante de Saída nº <strong>{{ "%04d" | format(mov.id) }}</strong></p>
+        </div>
+
+        <!-- CORPO DO TEXTO (FORMAL) -->
+        <div class="px-3 mb-4" style="font-size: 1.05rem; line-height: 1.8;">
+            <p class="text-justify">
+                Declaro para os devidos fins de direito, controle patrimonial e prestação de contas que o Almoxarifado Central efetuou nesta data a entrega dos materiais abaixo especificados ao setor requisitante, cujo recebedor assume total responsabilidade pela guarda, conservação e correta aplicação dos itens no âmbito da administração pública municipal.
+            </p>
+
+            <!-- DETALHES DA MOVIMENTAÇÃO -->
+            <div class="card bg-light border-dark my-3 p-3">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Data da Operação:</strong> {{ mov.data_movimentacao.strftime('%d/%m/%Y às %H:%M') }}
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <strong>Setor Destino:</strong> <span class="text-uppercase fw-bold">{{ mov.setor.nome }}</span>
+                    </div>
+                    <div class="col-md-12">
+                        <strong>Secretaria Vinculada:</strong> {{ mov.setor.secretaria or 'Não especificada' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABELA DO ITEM -->
+            <div class="table-responsive my-3">
+                <table class="table table-bordered border-dark align-middle">
+                    <thead class="table-dark text-center">
+                        <tr>
+                            <th>Item</th>
+                            <th>Descrição do Produto / Material</th>
+                            <th>Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-center fw-bold">01</td>
+                            <td class="fw-bold">{{ mov.produto.nome }}</td>
+                            <td class="text-center fw-bold fs-5">{{ mov.quantidade }} un.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- OBSERVAÇÃO -->
+            {% if mov.observacao %}
+            <div class="mb-3">
+                <strong>Observações / Finalidade:</strong>
+                <p class="border border-secondary p-2 rounded bg-light mb-0 small">{{ mov.observacao }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ESPAÇO PARA ASSINATURAS -->
+        <div class="row mt-5 pt-5 text-center">
+            <div class="col-6">
+                <div class="border-top border-dark pt-2 mx-4">
+                    <p class="mb-0 fw-bold">Responsável pelo Almoxarifado</p>
+                    <p class="small text-muted">Controle de Estoque</p>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="border-top border-dark pt-2 mx-4">
+                    <p class="mb-0 fw-bold">Recebedor / Setor</p>
+                    <p class="small text-muted">{{ mov.setor.nome }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- RODAPÉ INSTITUCIONAL -->
+        <div class="text-center mt-5 pt-3 border-top small text-muted">
+            <p class="mb-0">Documento gerado eletronicamente pelo Sistema de Gestão de Almoxarifado Municipal.</p>
+        </div>
+    </div>
+
+    <!-- BOTÕES DE AÇÃO (Não aparecem na impressão) -->
+    <div class="text-center mt-4 d-print-none gap-2 d-flex justify-content-center">
+        <button onclick="window.print()" class="btn btn-dark btn-lg px-5 fw-bold shadow">
+            <i class="bi bi-printer"></i> Imprimir Documento Oficial
+        </button>
+        <a href="/produtos/html/lista" class="btn btn-outline-secondary btn-lg px-4">
+            Voltar ao Estoque
+        </a>
+    </div>
+</div>
+
+<!-- ESTILO ESPECIAL PARA IMPRESSÃO LIMPA (PAPEL A4) -->
+<style>
+    @media print {
+        body {
+            background-color: #ffffff !important;
+        }
+        .navbar, .d-print-none {
+            display: none !important;
+        }
+        .container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        #folha-termo {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+        }
+    }
+</style>
+{% endblock %}

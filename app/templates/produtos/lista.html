@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+<!-- CORRIGIDO AQUI: A lista exibe o título padrão da página -->
+{% block title %}Estoque de Produtos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+    <h2><i class="bi bi-boxes"></i> Estoque Central</h2>
+    <a href="/produtos/html/cadastro" class="btn btn-success fw-bold">
+        <i class="bi bi-plus-lg"></i> Novo Produto
+    </a>
+</div>
+
+<div class="card shadow-sm border-success">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="ps-3">ID</th>
+                        <th>Nome do Produto</th>
+                        <th>Categoria</th>
+                        <th class="text-center">Estoque</th>
+                        <th class="text-center pe-3">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produto in produtos %}
+                    <tr>
+                        <td class="ps-3">{{ produto.id }}</td>
+                        <td class="fw-bold">{{ produto.nome }}</td>
+                        <td>{{ produto.categoria or '-' }}</td>
+                        <td class="text-center">
+                            {% if produto.quantidade_estoque == 0 %}
+                                <span class="badge bg-danger fs-6">Zerado</span>
+                            {% elif produto.quantidade_estoque <= produto.estoque_minimo %}
+                                <span class="badge bg-warning text-dark fs-6" title="Abaixo do Mínimo de {{ produto.estoque_minimo }}">
+                                    Baixo: {{ produto.quantidade_estoque }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success fs-6">{{ produto.quantidade_estoque }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-3">
+                            <!-- Botão de Extrato (Histórico) -->
+                            <a href="/produtos/html/extrato/{{ produto.id }}" class="btn btn-sm btn-outline-dark me-1" title="Ver Histórico (Extrato)">
+                                <i class="bi bi-clock-history"></i>
+                            </a>
+                            
+                            <!-- Botão de Editar -->
+                            <a href="/produtos/html/editar/{{ produto.id }}" class="btn btn-sm btn-outline-primary me-1" title="Editar Produto">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            
+                            <!-- Botão de Deletar -->
+                            <button class="btn btn-sm btn-outline-danger" data-produto-id="{{ produto.id }}" data-produto-nome="{{ produto.nome|e }}" onclick="deletarProduto(this.dataset.produtoId, this.dataset.produtoNome)" title="Excluir Produto">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Nenhum produto cadastrado no estoque ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+async function deletarProduto(id, nome) {
+    if (confirm(`ATENÇÃO!\nTem certeza que deseja excluir o produto "${nome}"?\n\nIsso também apagará todo o histórico dele!`)) {
+        try {
+            const response = await fetch(`/produtos/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                alert('Produto excluído com sucesso!');
+                window.location.reload();
+            } else {
+                const erro = await response.json();
+                alert('Erro ao excluir: ' + JSON.stringify(erro.detail || erro));
+            }
+        } catch (error) {
+            alert('Falha na comunicação com o servidor.');
+        }
+    }
+}
+</script>
+{% endblock %}

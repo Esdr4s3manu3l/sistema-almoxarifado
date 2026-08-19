@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Relatório por Setor{% endblock %}
+
+{% block content %}
+<div class="d-print-none mt-4 mb-4">
+    <h2><i class="bi bi-file-earmark-bar-graph"></i> Relatório de Consumo</h2>
+    <p class="text-muted">Filtre as saídas para gerar a prestação de contas mensal.</p>
+</div>
+
+<div class="card shadow-sm mb-4 d-print-none border-dark">
+    <div class="card-body bg-light">
+        <form method="GET" action="/relatorios/html/setores" class="row align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Selecionar Setor</label>
+                <select name="setor_id" class="form-select border-dark">
+                    <option value="">-- Todos os Setores --</option>
+                    {% for setor in setores %}
+                        <option value="{{ setor.id }}" {% if setor_selecionado == setor.id %}selected{% endif %}>{{ setor.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Filtrar por Mês/Ano</label>
+                <input type="month" name="mes" class="form-select border-dark" value="{{ mes_selecionado or '' }}">
+            </div>
+            <div class="col-md-5 d-flex gap-2">
+                <button type="submit" class="btn btn-dark w-100 fw-bold"><i class="bi bi-search"></i> Filtrar</button>
+                <button type="button" class="btn btn-outline-dark" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+                
+                <!-- Botão de Download Excel -->
+                <a href="/relatorios/exportar/excel?setor_id={{ setor_selecionado or '' }}&mes={{ mes_selecionado or '' }}" 
+                   class="btn btn-success" title="Exportar para Excel">
+                   <i class="bi bi-file-earmark-excel"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-dark mb-5">
+    <div class="card-header bg-white border-bottom border-dark text-center py-4">
+        <h4 class="mb-0 fw-bold">RELATÓRIO DE CONSUMO DE MATERIAIS</h4>
+        {% if mes_selecionado %}<p class="mb-0 text-uppercase mt-2">Período: {{ mes_selecionado[5:] }}/{{ mes_selecionado[:4] }}</p>{% endif %}
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-striped table-bordered mb-0 align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th class="ps-3">Data</th>
+                    <th>Setor Recebedor</th>
+                    <th>Produto</th>
+                    <th class="text-center">Qtd</th>
+                    <th>Observação / Motivo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimentacoes %}
+                <tr>
+                    <td class="ps-3">{{ mov.data_movimentacao.strftime('%d/%m/%Y') }}</td>
+                    <td class="fw-bold">{{ mov.setor.nome if mov.setor else '-' }}</td>
+                    <td>{{ mov.produto.nome }}</td>
+                    <td class="text-center fw-bold fs-5">{{ mov.quantidade }}</td>
+                    <td>{{ mov.observacao or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <i class="bi bi-search d-block fs-2 text-muted mb-2"></i>
+                        Nenhum registro de saída encontrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    @media print {
+        body { background-color: #fff !important; }
+        .navbar, .d-print-none { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; margin: 0 !important; }
+        .card-header { border-bottom: 2px solid #000 !important; }
+        @page { margin: 1cm; }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Entrada de Material{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-9">
+        <div class="card shadow-sm border-primary">
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+                <i class="bi bi-box-arrow-in-right fs-4 me-2"></i>
+                <h5 class="mb-0">Registrar Entrada de Material (NF-e)</h5>
+            </div>
+            <div class="card-body bg-light">
+                <form id="formEntrada">
+                    <div class="card mb-3 border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted border-bottom pb-2 mb-3">1. Identificação do Material</h6>
+                            <div class="row">
+                                <div class="col-md-5 mb-3">
+                                    <label for="filtro_categoria" class="form-label fw-bold">Filtrar por Categoria</label>
+                                    <select class="form-select border-primary" id="filtro_categoria">
+                                        <option value="">-- Todas as Categorias --</option>
+                                        {% for cat in categorias %}
+                                            <option value="{{ cat }}">{{ cat }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-7 mb-3">
+                                    <label for="produto_id" class="form-label fw-bold">Produto *</label>
+                                    <select class="form-select border-primary" id="produto_id" required>
+                                        <option value="">Selecione o produto...</option>
+                                        {% for produto in produtos %}
+                                            <option value="{{ produto.id }}" data-categoria="{{ produto.categoria or '' }}">{{ produto.nome }} (Estoque atual: {{ produto.quantidade_estoque }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3 border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted border-bottom pb-2 mb-3">2. Detalhes da Entrada</h6>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="quantidade" class="form-label fw-bold">Quantidade *</label>
+                                    <input type="number" class="form-control" id="quantidade" required min="1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="nfe" class="form-label fw-bold">Nº da Nota / Empenho</label>
+                                    <input type="text" class="form-control" id="nfe" placeholder="Ex: 123456">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="data_movimentacao" class="form-label fw-bold">Data da Entrada</label>
+                                    <input type="datetime-local" class="form-control" id="data_movimentacao">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4 px-2">
+                        <label for="observacao" class="form-label fw-bold">Observação</label>
+                        <textarea class="form-control" id="observacao" rows="2" placeholder="Informações adicionais..."></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/" class="btn btn-outline-secondary px-4">Cancelar</a>
+                        <button type="submit" class="btn btn-primary px-5 fw-bold"><i class="bi bi-check-lg"></i> Confirmar Entrada</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const inputData = document.getElementById('data_movimentacao');
+    const agora = new Date();
+    agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+    inputData.value = agora.toISOString().slice(0, 16);
+
+    const filtroCategoria = document.getElementById('filtro_categoria');
+    const selectProduto = document.getElementById('produto_id');
+
+    filtroCategoria.addEventListener('change', function() {
+        const catSelecionada = this.value;
+        const opcoes = selectProduto.querySelectorAll('option');
+
+        selectProduto.value = "";
+        opcoes.forEach(opcao => {
+            if (opcao.value === "") return;
+            const catProduto = opcao.getAttribute('data-categoria');
+            
+            if (!catSelecionada || catProduto === catSelecionada) {
+                opcao.hidden = false;
+                opcao.disabled = false;
+            } else {
+                opcao.hidden = true;
+                opcao.disabled = true;
+            }
+        });
+    });
+
+    document.getElementById('formEntrada').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const dataSelecionada = document.getElementById('data_movimentacao').value;
+        const payload = {
+            produto_id: parseInt(document.getElementById('produto_id').value),
+            tipo: "entrada",
+            quantidade: parseInt(document.getElementById('quantidade').value),
+            nfe: document.getElementById('nfe').value || null,
+            observacao: document.getElementById('observacao').value || null,
+            data_movimentacao: dataSelecionada ? new Date(dataSelecionada).toISOString() : null
+        };
+
+        try {
+            const response = await fetch('/movimentacoes/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (response.ok) {
+                alert('Entrada registrada com sucesso!');
+                window.location.href = '/produtos/html/lista';
+            } else {
+                const erro = await response.json();
+                alert('Erro: ' + JSON.stringify(erro.detail || erro));
+            }
+        } catch (error) {
+            alert('Falha na comunicação.');
+        }
+    });
+</script>
+{% endblock %}

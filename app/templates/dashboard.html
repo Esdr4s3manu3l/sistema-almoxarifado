@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Central{% endblock %}
+
+{% block content %}
+<div class="text-center mb-5 mt-4">
+    <h2 class="fw-bold">Visão Geral do Almoxarifado</h2>
+    <p class="text-muted">Resumo do estoque e operações do mês atual</p>
+</div>
+
+<!-- Cards de Indicadores (Números Reais) -->
+<div class="row g-4 justify-content-center mb-5">
+    <div class="col-md-3">
+        <div class="card shadow border-0 bg-success text-white h-100">
+            <div class="card-body text-center py-4">
+                <h1 class="display-4 fw-bold">{{ total_produtos }}</h1>
+                <p class="mb-0 fs-5">Produtos Cadastrados</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow border-0 bg-danger text-white h-100">
+            <div class="card-body text-center py-4">
+                <h1 class="display-4 fw-bold">{{ produtos_zerados }}</h1>
+                <p class="mb-0 fs-5">Itens com Estoque Zerado</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow border-0 bg-primary text-white h-100">
+            <div class="card-body text-center py-4">
+                <h1 class="display-4 fw-bold">{{ entradas_mes }}</h1>
+                <p class="mb-0 fs-5">Entradas (Neste Mês)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow border-0 bg-warning text-dark h-100">
+            <div class="card-body text-center py-4">
+                <h1 class="display-4 fw-bold">{{ saidas_mes }}</h1>
+                <p class="mb-0 fs-5">Saídas (Neste Mês)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botões de Ação Rápida -->
+<div class="row g-4 justify-content-center">
+    <div class="col-md-4">
+        <a href="/movimentacoes/html/entrada" class="btn btn-outline-primary w-100 py-3 fw-bold fs-5 shadow-sm">
+            <i class="bi bi-box-arrow-in-right"></i> Nova Entrada de NF-e
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="/movimentacoes/html/saida" class="btn btn-warning w-100 py-3 fw-bold fs-5 shadow-sm">
+            <i class="bi bi-box-arrow-right"></i> Nova Saída / Distribuição
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="/relatorios/html/setores" class="btn btn-outline-dark w-100 py-3 fw-bold fs-5 shadow-sm">
+            <i class="bi bi-file-earmark-bar-graph"></i> Gerar Relatórios
+        </a>
+    </div>
+</div>
+{% endblock %}

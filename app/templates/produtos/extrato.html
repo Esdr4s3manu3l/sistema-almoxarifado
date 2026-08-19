@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Extrato: {{ produto.nome }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-clock-history"></i> Extrato de Movimentações</h2>
+        <h5 class="text-muted fw-bold">{{ produto.nome }} <span class="badge bg-secondary ms-2">Estoque Atual: {{ produto.quantidade_estoque }}</span></h5>
+    </div>
+    <a href="/produtos/html/lista" class="btn btn-outline-secondary fw-bold">
+        <i class="bi bi-arrow-left"></i> Voltar ao Estoque
+    </a>
+</div>
+
+<div class="card shadow-sm border-dark">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="ps-3">Data</th>
+                        <th>Tipo</th>
+                        <th class="text-center">Qtd.</th>
+                        <th>Destino / Origem</th>
+                        <th>Observação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mov in movimentacoes %}
+                    <tr>
+                        <td class="ps-3 text-muted">{{ mov.data_movimentacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                        
+                        <!-- Colore a palavra Entrada ou Saída -->
+                        <td>
+                            {% if mov.tipo.value == 'entrada' %}
+                                <span class="badge bg-primary"><i class="bi bi-arrow-down-left"></i> Entrada</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-arrow-up-right"></i> Saída</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="text-center fw-bold fs-5">
+                            <span class="{% if mov.tipo.value == 'entrada' %}text-primary{% else %}text-warning{% endif %}">
+                                {% if mov.tipo.value == 'entrada' %}+{% else %}-{% endif %}{{ mov.quantidade }}
+                            </span>
+                        </td>
+                        
+                        <td>
+                            {% if mov.tipo.value == 'entrada' %}
+                                <small class="text-muted">NF-e / Empenho:</small> <br> {{ mov.nfe or 'Sem NF' }}
+                            {% else %}
+                                <small class="text-muted">Setor:</small> <br> <span class="fw-bold">{{ mov.setor.nome if mov.setor else '-' }}</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="small">{{ mov.observacao or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                            Nenhuma movimentação registrada para este produto.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
