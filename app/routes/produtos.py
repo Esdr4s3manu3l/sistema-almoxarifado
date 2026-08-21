@@ -4,7 +4,11 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List
+import pandas as pd
+import io
 
+from fastapi import File, UploadFile
+from fastapi.responses import RedirectResponse
 from app.database.connection import get_db
 from app.database.models import Produto, Movimentacao
 from app.schemas.produto import ProdutoCreate, ProdutoResponse
@@ -90,3 +94,47 @@ def renderizar_extrato_html(request: Request, produto_id: int, db: Session = Dep
         name="produtos/extrato.html", 
         context={"request": request, "produto": produto, "movimentacoes": movimentacoes}
     )
+
+@router.post("/html/importar")
+async def importar_planilha_html(arquivo: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Recebe um arquivo Excel/CSV e cadastra os produtos em lote."""
+    conteudo = await arquivo.read()
+    
+    try:
+        # Lê o arquivo dependendo da extensão
+        if arquivo.filename.endswith('.csv'):
+            df = pd.read_csv(io.BytesIO(conteudo))
+        else:
+            df = pd.read_excel(io.BytesIO(conteudo))
+            
+        # O Pandas pode trazer valores nulos como NaN. Vamos preenchê-los.
+        df = df.fillna("")
+
+        # Itera por cada linha da planilha
+        for index, row in df.iterrows():
+            nome = str(row.get("Nome", "")).strip()
+            
+            # Pula linhas sem nome de produto
+            if not nome:
+                continue
+            
+            # Verifica se o produto já existe para não duplicar
+            produto_existente = db.query(Produto).filter(Produto.nome == nome).first()
+            
+            if not produto_existente:
+                novo_produto = Produto(
+                    nome=nome,
+                    categoria=str(row.get("Categoria", "")),
+                    descricao=str(row.get("Descricao", "")),
+                    quantidade_estoque=int(row.get("Quantidade", 0)) if row.get("Quantidade") else 0,
+                    estoque_minimo=int(row.get("Estoque Minimo", 0)) if row.get("Estoque Minimo") else 0
+                )
+                db.add(novo_produto)
+        
+        db.commit()
+    except Exception as e:
+        print(f"Erro ao processar planilha: {e}")
+        db.rollback()
+        
+    # Redireciona de volta para a lista de produtos após finalizar
+    return RedirectResponse(url="/produtos/html/lista", status_code=303)
