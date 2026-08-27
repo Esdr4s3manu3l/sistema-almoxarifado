@@ -1,61 +1,30 @@
 {% extends "base.html" %}
-{% block title %}Editar Setor{% endblock %}
+{% set active_page = "setores" %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-6">
-        <div class="card shadow-sm border-info">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Setor</h5>
-            </div>
-            <div class="card-body bg-light">
-                <form id="formEditarSetor">
-                    <input type="hidden" id="setor_id" value="{{ setor.id }}">
-
-                    <div class="mb-3">
-                        <label for="nome" class="form-label fw-bold">Nome do Setor *</label>
-                        <input type="text" class="form-control border-info" id="nome" required value="{{ setor.nome }}">
-                    </div>
-                    <div class="mb-4">
-                        <label for="secretaria" class="form-label fw-bold">Secretaria Vinculada</label>
-                        <input type="text" class="form-control" id="secretaria" value="{{ setor.secretaria or '' }}">
-                    </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="/setores/html/cadastro" class="btn btn-outline-secondary px-4">Cancelar</a>
-                        <button type="submit" class="btn btn-info text-white px-5 fw-bold"><i class="bi bi-save"></i> Salvar Alterações</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="view-header">
+  <div>
+    <h2 class="page-title">Editar Setor: {{ setor.nome }}</h2>
+    <p class="page-subtitle">Atualize os dados cadastrais da unidade administrativa.</p>
+  </div>
+  <a href="/setores/html/cadastro" class="btn btn-secondary">Voltar</a>
 </div>
 
-<script>
-document.getElementById('formEditarSetor').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const id = document.getElementById('setor_id').value;
-    const payload = {
-        nome: document.getElementById('nome').value,
-        secretaria: document.getElementById('secretaria').value || null
-    };
-
-    try {
-        const response = await fetch(`/setores/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (response.ok) {
-            alert('Setor atualizado com sucesso!');
-            window.location.href = '/setores/html/cadastro';
-        } else {
-            const erro = await response.json();
-            alert('Erro: ' + JSON.stringify(erro.detail || erro));
-        }
-    } catch (error) {
-        alert('Falha na comunicação com o servidor.');
-    }
-});
-</script>
+<div class="card panel-card" style="max-width: 750px;">
+  <form id="form-editar-setor" data-id="{{ setor.id }}">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nome do Setor</label>
+        <input type="text" name="nome" class="form-control" value="{{ setor.nome }}" required />
+      </div>
+      <div class="form-group">
+        <label>Secretaria Vinculada</label>
+        <input type="text" name="secretaria" class="form-control" value="{{ setor.secretaria if setor.secretaria else '' }}" required />
+      </div>
+    </div>
+    <div class="modal-footer" style="padding-top: 1rem;">
+      <button type="submit" class="btn btn-dark-blue">Salvar Alterações</button>
+    </div>
+  </form>
+</div>
 {% endblock %}

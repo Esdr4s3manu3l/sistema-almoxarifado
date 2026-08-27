@@ -1,151 +1,94 @@
 {% extends "base.html" %}
-{% block title %}Saída de Material{% endblock %}
+{% set active_page = "mov_saida" %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-9">
-        <div class="card shadow-sm border-warning">
-            <div class="card-header bg-warning text-dark d-flex align-items-center">
-                <i class="bi bi-box-arrow-right fs-4 me-2"></i>
-                <h5 class="mb-0 fw-bold">Registrar Saída de Material (Distribuição)</h5>
-            </div>
-            <div class="card-body bg-light">
-                <form id="formSaida">
-                    <div class="card mb-3 border-0 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="text-muted border-bottom pb-2 mb-3">1. Identificação do Material</h6>
-                            <div class="row">
-                                <div class="col-md-5 mb-3">
-                                    <label for="filtro_categoria" class="form-label fw-bold">Filtrar por Categoria</label>
-                                    <select class="form-select border-warning" id="filtro_categoria">
-                                        <option value="">-- Todas as Categorias --</option>
-                                        {% for cat in categorias %}
-                                            <option value="{{ cat }}">{{ cat }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-7 mb-3">
-                                    <label for="produto_id" class="form-label fw-bold">Produto *</label>
-                                    <select class="form-select border-warning" id="produto_id" required>
-                                        <option value="">Selecione o produto com estoque...</option>
-                                        {% for produto in produtos %}
-                                            <option value="{{ produto.id }}" data-categoria="{{ produto.categoria or '' }}">{{ produto.nome }} (Estoque: {{ produto.quantidade_estoque }})</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card mb-3 border-0 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="text-muted border-bottom pb-2 mb-3">2. Destino e Detalhes</h6>
-                            <div class="row">
-                                <div class="col-md-5 mb-3">
-                                    <label for="setor_id" class="form-label fw-bold">Setor Requisitante *</label>
-                                    <select class="form-select" id="setor_id" required>
-                                        <option value="">Selecione o setor...</option>
-                                        {% for setor in setores %}
-                                            <option value="{{ setor.id }}">{{ setor.nome }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="quantidade" class="form-label fw-bold">Quantidade *</label>
-                                    <input type="number" class="form-control" id="quantidade" required min="1">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="data_movimentacao" class="form-label fw-bold">Data da Saída</label>
-                                    <input type="datetime-local" class="form-control" id="data_movimentacao">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4 px-2">
-                        <label for="observacao" class="form-label fw-bold">Observação / Justificativa</label>
-                        <textarea class="form-control" id="observacao" rows="2" placeholder="Motivo da retirada..."></textarea>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="/" class="btn btn-outline-secondary px-4">Cancelar</a>
-                        <button type="submit" class="btn btn-warning px-5 fw-bold"><i class="bi bi-check-lg"></i> Confirmar Saída</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="view-header">
+  <div>
+    <h2 class="page-title">Registrar Saída de Materiais</h2>
+    <p class="page-subtitle">Selecione o setor requisitante e adicione os itens solicitados para gerar o comprovante de retirada.</p>
+  </div>
 </div>
 
-<script>
-    const inputData = document.getElementById('data_movimentacao');
-    const agora = new Date();
-    agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
-    inputData.value = agora.toISOString().slice(0, 16);
+<div class="card panel-card" style="max-width: 900px;">
+  <form id="form-saida-multipla" onsubmit="enviarSaidaMultipla(event)">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Setor Requisitante / Destino</label>
+        <select name="setor_id" id="setor_id" class="form-control" required>
+          <option value="" disabled selected>Selecione a secretaria/setor...</option>
+          {% for s in setores %}
+            <option value="{{ s.id }}">{{ s.nome }} ({{ s.secretaria if s.secretaria else 'Geral' }})</option>
+          {% endfor %}
+        </select>
+      </div>
 
-    const filtroCategoria = document.getElementById('filtro_categoria');
-    const selectProduto = document.getElementById('produto_id');
+      <div class="form-group">
+        <label>Nº de Requisição / Protocolo</label>
+        <input type="text" name="nfe" id="nfe" class="form-control" placeholder="Ex: REQ-2026-0042" />
+      </div>
 
-    filtroCategoria.addEventListener('change', function() {
-        const catSelecionada = this.value;
-        const opcoes = selectProduto.querySelectorAll('option');
+      <div class="form-group full-width">
+        <label>Servidor Responsável pela Retirada</label>
+        <input type="text" name="observacao" id="observacao" class="form-control" placeholder="Nome completo do servidor e cargo/matrícula..." required />
+      </div>
+    </div>
 
-        selectProduto.value = "";
-        opcoes.forEach(opcao => {
-            if (opcao.value === "") return;
-            const catProduto = opcao.getAttribute('data-categoria');
-            
-            if (!catSelecionada || catProduto === catSelecionada) {
-                opcao.hidden = false;
-                opcao.disabled = false;
-            } else {
-                opcao.hidden = true;
-                opcao.disabled = true;
-            }
-        });
-    });
+    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;" />
 
-    document.getElementById('formSaida').addEventListener('submit', async function(event) {
-        event.preventDefault();
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 style="font-size: 1rem; color: #fff; font-weight: 600;">Itens Solicitados</h3>
+      <button type="button" class="btn btn-secondary" onclick="adicionarLinhaItem()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+        <i data-lucide="plus"></i> Adicionar Outro Item
+      </button>
+    </div>
 
-        const quantidade = document.getElementById('quantidade').value;
-        const selectSetor = document.getElementById('setor_id');
-        const nomeSetor = selectSetor.options[selectSetor.selectedIndex].text;
-        const dataSelecionada = document.getElementById('data_movimentacao').value;
+    <!-- TABELA DINÂMICA DE ITENS -->
+    <div class="table-container" style="margin-bottom: 1.5rem;">
+      <table class="custom-table" id="tabela-itens-saida">
+        <thead>
+          <tr>
+            <th style="width: 60%;">Produto</th>
+            <th style="width: 30%;">Quantidade</th>
+            <th style="width: 10%; text-align: center;">Remover</th>
+          </tr>
+        </thead>
+        <tbody id="linhas-produtos-container">
+          <!-- Linha 1 inicial -->
+          <tr class="item-linha">
+            <td>
+              <select name="produto_id[]" class="form-control select-produto" required>
+                <option value="" disabled selected>Selecione o produto...</option>
+                {% for p in produtos %}
+                  <option value="{{ p.id }}">{{ p.nome }} (Estoque disponível: {{ p.quantidade_estoque }} UN)</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td>
+              <input type="number" name="quantidade[]" class="form-control input-qtd" min="1" value="1" required />
+            </td>
+            <td style="text-align: center;">
+              <button type="button" class="action-btn text-danger" onclick="removerLinhaItem(this)" title="Remover item">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-        if (!confirm(`Confirma a saída de ${quantidade} unidade(s) para o setor: ${nomeSetor}?`)) {
-            return;
-        }
+    <div class="modal-footer" style="padding-top: 1rem;">
+      <button type="submit" class="btn btn-dark-blue" id="btn-submit-saida">
+        <i data-lucide="check-circle"></i> Confirmar Saída e Emitir Recibo
+      </button>
+    </div>
+  </form>
+</div>
 
-        const payload = {
-            produto_id: parseInt(document.getElementById('produto_id').value),
-            tipo: "saida",
-            quantidade: parseInt(quantidade),
-            setor_id: parseInt(selectSetor.value),
-            observacao: document.getElementById('observacao').value || null,
-            data_movimentacao: dataSelecionada ? new Date(dataSelecionada).toISOString() : null
-        };
-
-        try {
-            const response = await fetch('/movimentacoes/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                const mov = await response.json();
-                if (confirm('Saída registrada com sucesso! Deseja gerar o Termo de Recebimento (PDF) agora?')) {
-                    window.open(`/movimentacoes/html/recibo/${mov.id}`, '_blank');
-                }
-                window.location.href = '/produtos/html/lista';
-            } else {
-                const erro = await response.json();
-                alert('Erro: ' + JSON.stringify(erro.detail || erro));
-            }
-        } catch (error) {
-            alert('Falha na comunicação.');
-        }
-    });
-</script>
+<!-- TEMPLATE OCULTO PARA NOVAS LINHAS -->
+<select id="select-produtos-template" style="display: none;">
+  <option value="" disabled selected>Selecione o produto...</option>
+  {% for p in produtos %}
+    <option value="{{ p.id }}">{{ p.nome }} (Estoque: {{ p.quantidade_estoque }} UN)</option>
+  {% endfor %}
+</select>
 {% endblock %}

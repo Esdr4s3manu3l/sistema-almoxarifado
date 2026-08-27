@@ -1,47 +1,110 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Almoxarifado{% endblock %}</title>
-    
-    <!-- Bootstrap CSS e Ícones -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    
-    <!-- SEU CSS LOCAL (Opcional) -->
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
-</head>
-<body class="bg-light">
-    <!-- BARRA DE NAVEGAÇÃO -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/"><i class="bi bi-box-seam"></i> Almoxarifado</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/produtos/html/lista">Produtos</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/movimentacoes/html/entrada">Entrada (NF-e)</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/movimentacoes/html/saida">Saída (Distribuição)</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/setores/html/cadastro">Setores</a></li>
-                    <li class="nav-item"><a class="nav-link text-warning fw-bold" href="/relatorios/html/setores">Relatórios</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}SIALM - Almoxarifado Municipal{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon.png">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 
-    <!-- CONTEÚDO DA PÁGINA -->
-    <div class="container">
-        {% block content %}{% endblock %}
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-box">
+        <i data-lucide="package"></i>
+      </div>
+      <div class="logo-text">
+        <h2>SIALM</h2>
+        <span>Gestão de suprimentos</span>
+      </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- SEU JS LOCAL (Opcional) -->
-    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Operação</div>
+      <a href="/" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+        <i data-lucide="layout-grid"></i>
+        <span>Visão geral</span>
+      </a>
+      <a href="/produtos/html/lista" class="nav-item {% if active_page == 'produtos' %}active{% endif %}">
+        <i data-lucide="boxes"></i>
+        <span>Estoque</span>
+      </a>
+      <a href="/movimentacoes/html/saida" class="nav-item {% if active_page == 'mov_saida' %}active{% endif %}">
+        <i data-lucide="arrow-up-right"></i>
+        <span>Registrar Saída</span>
+      </a>
+      <a href="/movimentacoes/html/entrada" class="nav-item {% if active_page == 'mov_entrada' %}active{% endif %}">
+        <i data-lucide="arrow-down-left"></i>
+        <span>Registrar Entrada</span>
+      </a>
+
+      <div class="nav-section-title">Cadastros e análise</div>
+      <a href="/setores/html/cadastro" class="nav-item {% if active_page == 'setores' %}active{% endif %}">
+        <i data-lucide="building-2"></i>
+        <span>Novo Setor</span>
+      </a>
+      <a href="/relatorios/html/setores" class="nav-item {% if active_page == 'relatorios' %}active{% endif %}">
+        <i data-lucide="bar-chart-2"></i>
+        <span>Consumo / Setores</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p>Prefeitura Municipal · Secretaria de Administração</p>
+    </div>
+  </aside>
+
+  <!-- MAIN WRAPPER -->
+  <div class="main-wrapper">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="municipality-badge">
+          <div class="coat-of-arms">
+            <i data-lucide="shield"></i>
+          </div>
+          <div>
+            <h1>Almoxarifado Municipal</h1>
+            <p>Sistema Integrado de Controle de Suprimentos</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <button class="icon-button" id="theme-toggle" title="Alternar tema" type="button">
+            <i data-lucide="sun" id="theme-icon"></i>
+        </button>
+        
+        <div class="user-profile">
+          <div class="avatar">AM</div>
+          <div class="user-info">
+            <strong>Administrador</strong>
+            <span>Almoxarife-chefe</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="content-area">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    if (window.lucide) lucide.createIcons();
+  </script>
+  {% block extra_scripts %}{% endblock %}
 </body>
 </html>

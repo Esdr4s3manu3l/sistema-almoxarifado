@@ -1,5 +1,6 @@
 import os
-from datetime import datetime, timezone
+import webbrowser
+from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
@@ -7,7 +8,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
-from contextlib import asynccontextmanager
 
 # Carrega as variáveis do arquivo .env antes de iniciar o banco
 load_dotenv()
@@ -16,16 +16,7 @@ from app.database.connection import Base, engine, get_db
 from app.database.models import Produto, Movimentacao, TipoMovimentacao
 from app.routes import produtos, movimentacoes, setores, relatorios
 
-# --- NOVO MODELO DE STARTUP (LIFESPAN) ---
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Cria o banco e as tabelas automaticamente se não existirem (ao ligar o PC)
-    Base.metadata.create_all(bind=engine)
-    # ATENÇÃO: Retirei o webbrowser.open daqui para o sistema ligar invisível!
-    yield  # O servidor fica rodando a partir daqui silenciosamente
-
-# Adiciona o lifespan na inicialização do app
-app = FastAPI(title="Sistema de Almoxarifado", lifespan=lifespan)
+app = FastAPI(title="Sistema de Almoxarifado")
 
 # Configuração da pasta de arquivos estáticos (CSS, JS, Imagens)
 DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
@@ -47,10 +38,8 @@ def root_dashboard(request: Request, db: Session = Depends(get_db)):
     total_produtos = db.query(Produto).count()
     produtos_zerados = db.query(Produto).filter(Produto.quantidade_estoque == 0).count()
     
-    # Pegando o mês e ano de forma correta e atualizada
-    agora = datetime.now(timezone.utc)
-    mes_atual = agora.month
-    ano_atual = agora.year
+    mes_atual = datetime.utcnow().month
+    ano_atual = datetime.utcnow().year
     
     saidas_mes = db.query(Movimentacao).filter(
         Movimentacao.tipo == TipoMovimentacao.SAIDA,
@@ -75,3 +64,9 @@ def root_dashboard(request: Request, db: Session = Depends(get_db)):
             "entradas_mes": entradas_mes
         }
     )
+
+@app.on_event("startup")
+def iniciar_sistema():
+    # Cria o banco e as tabelas automaticamente se não existirem
+    Base.metadata.create_all(bind=engine)
+    webbrowser.open("http://localhost:8000")

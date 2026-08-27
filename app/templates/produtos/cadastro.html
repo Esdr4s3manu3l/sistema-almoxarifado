@@ -1,66 +1,38 @@
 {% extends "base.html" %}
-{% block title %}Novo Produto{% endblock %}
+{% set active_page = "prod_cadastro" %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-8">
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0">Cadastrar Novo Produto</h4>
-            </div>
-            <div class="card-body">
-                <form id="formCadastroProduto">
-                    <div class="mb-3">
-                        <label for="nome" class="form-label">Nome do Produto *</label>
-                        <input type="text" class="form-control" id="nome" required minlength="2" maxlength="100" placeholder="Ex: Papel Sulfite A4">
-                    </div>
-                    <div class="mb-3">
-                        <label for="categoria" class="form-label">Categoria</label>
-                        <input type="text" class="form-control" id="categoria" placeholder="Ex: Material de Expediente">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                            <label for="estoque_minimo" class="form-label">Estoque Mínimo</label>
-                            <input type="number" class="form-control" id="estoque_minimo" value="0" min="0" title="Avisa quando o estoque chegar neste valor">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="descricao" class="form-label">Outras Informações / Descrição</label>
-                        <textarea class="form-control" id="descricao" rows="3"></textarea>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <a href="/" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-success">Salvar Produto</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="view-header">
+  <div>
+    <h2 class="page-title">Cadastrar Novo Produto</h2>
+    <p class="page-subtitle">Preencha as informações para registrar o material no catálogo.</p>
+  </div>
+  <a href="/produtos/html/lista" class="btn btn-secondary">Voltar ao Catálogo</a>
 </div>
 
-<script>
-document.getElementById('formCadastroProduto').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const payload = {
-        nome: document.getElementById('nome').value,
-        categoria: document.getElementById('categoria').value || null,
-        descricao: document.getElementById('descricao').value || null
-    };
-    try {
-        const response = await fetch('/produtos/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (response.ok) {
-            alert('Produto cadastrado com sucesso!');
-            window.location.href = '/produtos/html/lista';
-        } else {
-            const erro = await response.json();
-            alert('Erro: ' + JSON.stringify(erro.detail || erro));
-        }
-    } catch (error) {
-        alert('Falha na comunicação.');
-    }
-});
-</script>
+<div class="card panel-card" style="max-width: 750px;">
+  <form id="form-cadastrar-produto" onsubmit="salvarNovoProduto(event)">
+    <div class="form-grid">
+      <div class="form-group full-width">
+        <label>Nome do Produto / Material</label>
+        <input type="text" name="nome" class="form-control" placeholder="Ex: Toner HP 105A" required />
+      </div>
+      <div class="form-group">
+        <label>Categoria</label>
+        <input type="text" name="categoria" class="form-control" placeholder="Ex: Informática" />
+      </div>
+      <div class="form-group">
+        <label>Estoque Mínimo</label>
+        <input type="number" name="estoque_minimo" class="form-control" value="10" min="0" required />
+      </div>
+    </div>
+    <div class="form-group full-width">
+      <label>Descrição Detalhada</label>
+      <textarea name="descricao" class="form-control" rows="3" placeholder="Especificações técnicas, modelo, marca..."></textarea>
+    </div>
+    <div class="modal-footer" style="padding-top: 1rem;">
+      <button type="submit" class="btn btn-dark-blue">Salvar Produto</button>
+    </div>
+  </form>
+</div>
 {% endblock %}

@@ -1,114 +1,69 @@
 {% extends "base.html" %}
-{% block title %}Cadastro de Setores{% endblock %}
+{% set active_page = "setores" %}
 
 {% block content %}
-<div class="row mt-4">
-    <!-- Formulário -->
-    <div class="col-md-5">
-        <div class="card shadow-sm border-secondary">
-            <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0">Cadastrar Novo Setor</h5>
-            </div>
-            <div class="card-body bg-light">
-                <form id="formSetor">
-                    <div class="mb-3">
-                        <label for="nome" class="form-label fw-bold">Nome do Setor *</label>
-                        <input type="text" class="form-control border-secondary" id="nome" required placeholder="Ex: Posto Central">
-                    </div>
-                    <div class="mb-4">
-                        <label for="secretaria" class="form-label fw-bold">Secretaria Vinculada</label>
-                        <input type="text" class="form-control" id="secretaria" placeholder="Ex: Secretaria de Saúde">
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <a href="/" class="btn btn-outline-secondary px-4">Voltar</a>
-                        <button type="submit" class="btn btn-secondary px-4 fw-bold">Salvar Setor</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lista de Setores -->
-    <div class="col-md-7">
-        <div class="card shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="mb-0 text-dark">Setores Já Cadastrados</h5>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-striped table-sm align-middle mb-0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th class="ps-3">Nome do Setor</th>
-                            <th>Secretaria</th>
-                            <th class="text-center pe-3">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for setor in setores %}
-                        <tr>
-                            <td class="ps-3 fw-bold">{{ setor.nome }}</td>
-                            <td>{{ setor.secretaria or '-' }}</td>
-                            <td class="text-center pe-3">
-                                <a href="/setores/html/editar/{{ setor.id }}" class="btn btn-sm btn-outline-primary" title="Editar Setor">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button class="btn btn-sm btn-outline-danger" data-setor-id="{{ setor.id }}" data-setor-nome="{{ setor.nome|e }}" onclick="deletarSetor(this.dataset.setorId, this.dataset.setorNome)" title="Excluir Setor">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="3" class="text-center py-4 text-muted">Nenhum setor cadastrado.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+<div class="view-header">
+  <div>
+    <h2 class="page-title">Setores e Secretarias</h2>
+    <p class="page-subtitle">Gerencie as unidades administrativas autorizadas a requisitar materiais.</p>
+  </div>
 </div>
 
-<script>
-document.getElementById('formSetor').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const payload = {
-        nome: document.getElementById('nome').value,
-        secretaria: document.getElementById('secretaria').value || null
-    };
+<div class="card panel-card" style="max-width: 800px; margin-bottom: 2rem;">
+  <div class="panel-card-header">
+    <i data-lucide="plus-circle" class="warning-icon" style="color: var(--accent-blue);"></i>
+    <h3>Novo Setor</h3>
+  </div>
+  <form id="form-cadastrar-setor" onsubmit="salvarNovoSetor(event)">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nome do Setor / Departamento</label>
+        <input type="text" name="nome" class="form-control" placeholder="Ex: Almoxarifado Central" required />
+      </div>
+      <div class="form-group">
+        <label>Secretaria Vinculada</label>
+        <input type="text" name="secretaria" class="form-control" placeholder="Ex: Secretaria de Administração" required />
+      </div>
+    </div>
+    <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
+      <button type="submit" class="btn btn-dark-blue">
+        <i data-lucide="plus"></i> Cadastrar Setor
+      </button>
+    </div>
+  </form>
+</div>
 
-    try {
-        const response = await fetch('/setores/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (response.ok) {
-            alert('Setor cadastrado com sucesso!');
-            window.location.reload();
-        } else {
-            const erro = await response.json();
-            alert('Erro: ' + JSON.stringify(erro.detail || erro));
-        }
-    } catch (error) {
-        alert('Falha na comunicação com o servidor.');
-    }
-});
-
-async function deletarSetor(id, nome) {
-    if (confirm(`Atenção!\nDeseja excluir o setor "${nome}"?`)) {
-        try {
-            const response = await fetch(`/setores/${id}`, { method: 'DELETE' });
-            if (response.ok) {
-                alert('Setor excluído com sucesso!');
-                window.location.reload();
-            } else {
-                const erro = await response.json();
-                alert('Erro: ' + JSON.stringify(erro.detail || erro));
-            }
-        } catch (error) {
-            alert('Falha na comunicação com o servidor.');
-        }
-    }
-}
-</script>
+<div class="table-container">
+  <table class="custom-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nome do Setor</th>
+        <th>Secretaria</th>
+        <th class="text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if setores %}
+        {% for s in setores %}
+        <tr>
+          <td class="code-col">#{{ s.id }}</td>
+          <td><strong>{{ s.nome }}</strong></td>
+          <td>{{ s.secretaria if s.secretaria else '—' }}</td>
+          <td class="text-right actions-col">
+            <a href="/setores/html/editar/{{ s.id }}" class="action-btn" title="Editar"><i data-lucide="pencil"></i></a>
+            <button type="button" class="action-btn text-danger btn-deletar-setor" title="Excluir" data-id="{{ s.id }}">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="4" class="text-center" style="padding: 2rem;">Nenhum setor cadastrado até o momento.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

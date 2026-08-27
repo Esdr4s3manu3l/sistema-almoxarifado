@@ -1,64 +1,177 @@
 {% extends "base.html" %}
-{% block title %}Dashboard Central{% endblock %}
+{% set active_page = "dashboard" %}
+
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
 
 {% block content %}
-<div class="text-center mb-5 mt-4">
-    <h2 class="fw-bold">Visão Geral do Almoxarifado</h2>
-    <p class="text-muted">Resumo do estoque e operações do mês atual</p>
+<!-- Elemento oculto com as métricas -->
+<div id="dashboard-metrics"
+     data-total="{{ total_produtos if total_produtos else 0 }}"
+     data-zerados="{{ produtos_zerados if produtos_zerados else 0 }}"
+     data-entradas="{{ entradas_mes if entradas_mes else 0 }}"
+     data-saidas="{{ saidas_mes if saidas_mes else 0 }}"
+     style="display: none;"></div>
+
+<div class="view-header">
+  <div>
+    <h2 class="page-title">Visão geral</h2>
+    <p class="page-subtitle">Resumo operacional do almoxarifado: indicadores-chave, balanço mensal de movimentações e saúde do estoque.</p>
+  </div>
 </div>
 
-<!-- Cards de Indicadores (Números Reais) -->
-<div class="row g-4 justify-content-center mb-5">
-    <div class="col-md-3">
-        <div class="card shadow border-0 bg-success text-white h-100">
-            <div class="card-body text-center py-4">
-                <h1 class="display-4 fw-bold">{{ total_produtos }}</h1>
-                <p class="mb-0 fs-5">Produtos Cadastrados</p>
-            </div>
-        </div>
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon icon-blue"><i data-lucide="box"></i></div>
+    <div class="kpi-data">
+      <span class="kpi-label">ITENS CADASTRADOS</span>
+      <span class="kpi-value">{{ total_produtos if total_produtos else 0 }}</span>
     </div>
-    <div class="col-md-3">
-        <div class="card shadow border-0 bg-danger text-white h-100">
-            <div class="card-body text-center py-4">
-                <h1 class="display-4 fw-bold">{{ produtos_zerados }}</h1>
-                <p class="mb-0 fs-5">Itens com Estoque Zerado</p>
-            </div>
-        </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon icon-amber"><i data-lucide="alert-octagon"></i></div>
+    <div class="kpi-data">
+      <span class="kpi-label">ITENS ZERADOS</span>
+      <span class="kpi-value">{{ produtos_zerados if produtos_zerados else 0 }}</span>
     </div>
-    <div class="col-md-3">
-        <div class="card shadow border-0 bg-primary text-white h-100">
-            <div class="card-body text-center py-4">
-                <h1 class="display-4 fw-bold">{{ entradas_mes }}</h1>
-                <p class="mb-0 fs-5">Entradas (Neste Mês)</p>
-            </div>
-        </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon icon-cyan"><i data-lucide="download"></i></div>
+    <div class="kpi-data">
+      <span class="kpi-label">ENTRADAS NO MÊS</span>
+      <span class="kpi-value">{{ entradas_mes if entradas_mes else 0 }}</span>
     </div>
-    <div class="col-md-3">
-        <div class="card shadow border-0 bg-warning text-dark h-100">
-            <div class="card-body text-center py-4">
-                <h1 class="display-4 fw-bold">{{ saidas_mes }}</h1>
-                <p class="mb-0 fs-5">Saídas (Neste Mês)</p>
-            </div>
-        </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon icon-emerald"><i data-lucide="upload"></i></div>
+    <div class="kpi-data">
+      <span class="kpi-label">SAÍDAS NO MÊS</span>
+      <span class="kpi-value">{{ saidas_mes if saidas_mes else 0 }}</span>
     </div>
+  </div>
 </div>
 
-<!-- Botões de Ação Rápida -->
-<div class="row g-4 justify-content-center">
-    <div class="col-md-4">
-        <a href="/movimentacoes/html/entrada" class="btn btn-outline-primary w-100 py-3 fw-bold fs-5 shadow-sm">
-            <i class="bi bi-box-arrow-in-right"></i> Nova Entrada de NF-e
-        </a>
+<!-- SEÇÃO DE GRÁFICOS ANALÍTICOS -->
+<div class="charts-grid">
+  <!-- GRÁFICO 1: ENTRADAS VS SAÍDAS -->
+  <div class="card panel-card chart-card">
+    <div class="panel-card-header">
+      <i data-lucide="bar-chart-3" class="warning-icon" style="color: var(--accent-blue);"></i>
+      <h3>Balanço Mensal (Entradas vs Saídas)</h3>
     </div>
-    <div class="col-md-4">
-        <a href="/movimentacoes/html/saida" class="btn btn-warning w-100 py-3 fw-bold fs-5 shadow-sm">
-            <i class="bi bi-box-arrow-right"></i> Nova Saída / Distribuição
-        </a>
+    <div class="chart-container">
+      <canvas id="chartMovimentacoes"></canvas>
     </div>
-    <div class="col-md-4">
-        <a href="/relatorios/html/setores" class="btn btn-outline-dark w-100 py-3 fw-bold fs-5 shadow-sm">
-            <i class="bi bi-file-earmark-bar-graph"></i> Gerar Relatórios
-        </a>
+  </div>
+
+  <!-- GRÁFICO 2: SAÚDE DO ESTOQUE -->
+  <div class="card panel-card chart-card">
+    <div class="panel-card-header">
+      <i data-lucide="pie-chart" class="warning-icon" style="color: #34d399;"></i>
+      <h3>Composição do Estoque</h3>
     </div>
+    <div class="chart-container">
+      <canvas id="chartEstoque"></canvas>
+    </div>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const metricsElem = document.getElementById('dashboard-metrics');
+    const totalProdutos = parseInt(metricsElem.dataset.total, 10) || 0;
+    const produtosZerados = parseInt(metricsElem.dataset.zerados, 10) || 0;
+    const entradasMes = parseInt(metricsElem.dataset.entradas, 10) || 0;
+    const saidasMes = parseInt(metricsElem.dataset.saidas, 10) || 0;
+    const produtosRegulares = Math.max(0, totalProdutos - produtosZerados);
+
+    if (window.Chart) {
+      Chart.defaults.color = '#94a3b8';
+      Chart.defaults.font.family = "'Inter', sans-serif";
+
+      // Gráfico 1: Entradas vs Saídas
+      const ctxMovElem = document.getElementById('chartMovimentacoes');
+      if (ctxMovElem) {
+        new Chart(ctxMovElem.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: ['Mês Vigente'],
+            datasets: [
+              {
+                label: 'Entradas (Reposição)',
+                data: [entradasMes],
+                backgroundColor: '#06b6d4',
+                borderRadius: 6,
+                barThickness: 45
+              },
+              {
+                label: 'Saídas (Consumo)',
+                data: [saidasMes],
+                backgroundColor: '#f59e0b',
+                borderRadius: 6,
+                barThickness: 45
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: { boxWidth: 12, padding: 15 }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: '#1e2c45' },
+                ticks: { precision: 0 }
+              },
+              x: {
+                grid: { display: false }
+              }
+            }
+          }
+        });
+      }
+
+      // Gráfico 2: Saúde do Estoque
+      const ctxEstElem = document.getElementById('chartEstoque');
+      if (ctxEstElem) {
+        new Chart(ctxEstElem.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: ['Estoque Regular', 'Itens Zerados'],
+            datasets: [{
+              data: [produtosRegulares, produtosZerados],
+              backgroundColor: ['#10b981', '#ef4444'],
+              borderColor: '#111a2e',
+              borderWidth: 3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { boxWidth: 12, padding: 15 }
+              }
+            },
+            cutout: '70%'
+          }
+        });
+      }
+    }
+  });
+</script>
 {% endblock %}

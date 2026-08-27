@@ -1,136 +1,219 @@
 {% extends "base.html" %}
-{% block title %}Termo de Recebimento - {{ mov.id }}{% endblock %}
+{% set active_page = "mov_saida" %}
+
+{% block extra_head %}
+<style>
+  /* ========================================================
+     ESTILOS EXCLUSIVOS PARA IMPRESSÃO (TAMANHO A4)
+     ======================================================== */
+  @media print {
+    /* Esconde a interface do sistema */
+    body * { visibility: hidden; }
+    #documento-oficial, #documento-oficial * { visibility: visible; }
+    
+    /* Zera margens do navegador e aplica formatação A4 pura */
+    @page { margin: 0; size: A4 portrait; }
+    
+    body {
+      background: #ffffff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    #documento-oficial {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 21cm !important; /* Largura exata do A4 */
+      min-height: 29.7cm !important; /* Altura exata do A4 */
+      margin: 0 !important;
+      padding: 2.5cm 2cm !important; /* Margens padrão de documentos (Superior: 2.5cm, Laterais: 2cm) */
+      box-shadow: none !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+      font-family: 'Times New Roman', Times, serif !important; /* Fonte padrão para documentos oficiais */
+    }
+
+    /* Força todas as cores para preto absoluto na impressão */
+    .doc-texto { color: #000000 !important; }
+    .doc-borda, th, td { border-color: #000000 !important; }
+  }
+
+  /* Estilos para a visualização na tela do sistema (antes de imprimir) */
+  #documento-oficial {
+    max-width: 21cm;
+    margin: 0 auto;
+    background: #ffffff;
+    color: #000000;
+    padding: 2.5cm 2cm;
+    border-radius: 4px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    font-family: 'Times New Roman', Times, serif;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container my-4">
-    <!-- Caixa do Documento (Estilo Folha A4) -->
-    <div class="card shadow-lg border-2 border-dark p-4 bg-white" id="folha-termo">
-        
-        <!-- CABEÇALHO INSTITUCIONAL / TIMBRADO -->
-        <div class="text-center border-bottom border-dark pb-3 mb-4">
-            <!-- Espaço para o Brasão ou Logo (Pode trocar a URL ou usar ícone) -->
-            <div class="mb-2">
-                <i class="bi bi-bank2 fs-1 text-secondary"></i>
-            </div>
-            <h4 class="fw-bold text-uppercase m-0">Prefeitura Municipal de Lagoa do Piauí</h4>
-            <h6 class="text-muted m-0">Secretaria Municipal de Administração e Planejamento</h6>
-            <p class="small text-muted m-0">Sistema de Controle de Almoxarifado Central</p>
-        </div>
-
-        <!-- TÍTULO DO DOCUMENTO -->
-        <div class="text-center my-4">
-            <h4 class="fw-bold text-uppercase text-decoration-underline">Termo de Entrega e Recebimento de Materiais</h4>
-            <p class="text-muted small">Comprovante de Saída nº <strong>{{ "%04d" | format(mov.id) }}</strong></p>
-        </div>
-
-        <!-- CORPO DO TEXTO (FORMAL) -->
-        <div class="px-3 mb-4" style="font-size: 1.05rem; line-height: 1.8;">
-            <p class="text-justify">
-                Declaro para os devidos fins de direito, controle patrimonial e prestação de contas que o Almoxarifado Central efetuou nesta data a entrega dos materiais abaixo especificados ao setor requisitante, cujo recebedor assume total responsabilidade pela guarda, conservação e correta aplicação dos itens no âmbito da administração pública municipal.
-            </p>
-
-            <!-- DETALHES DA MOVIMENTAÇÃO -->
-            <div class="card bg-light border-dark my-3 p-3">
-                <div class="row">
-                    <div class="col-md-6 mb-2">
-                        <strong>Data da Operação:</strong> {{ mov.data_movimentacao.strftime('%d/%m/%Y às %H:%M') }}
-                    </div>
-                    <div class="col-md-6 mb-2">
-                        <strong>Setor Destino:</strong> <span class="text-uppercase fw-bold">{{ mov.setor.nome }}</span>
-                    </div>
-                    <div class="col-md-12">
-                        <strong>Secretaria Vinculada:</strong> {{ mov.setor.secretaria or 'Não especificada' }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- TABELA DO ITEM -->
-            <div class="table-responsive my-3">
-                <table class="table table-bordered border-dark align-middle">
-                    <thead class="table-dark text-center">
-                        <tr>
-                            <th>Item</th>
-                            <th>Descrição do Produto / Material</th>
-                            <th>Quantidade</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="text-center fw-bold">01</td>
-                            <td class="fw-bold">{{ mov.produto.nome }}</td>
-                            <td class="text-center fw-bold fs-5">{{ mov.quantidade }} un.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- OBSERVAÇÃO -->
-            {% if mov.observacao %}
-            <div class="mb-3">
-                <strong>Observações / Finalidade:</strong>
-                <p class="border border-secondary p-2 rounded bg-light mb-0 small">{{ mov.observacao }}</p>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- ESPAÇO PARA ASSINATURAS -->
-        <div class="row mt-5 pt-5 text-center">
-            <div class="col-6">
-                <div class="border-top border-dark pt-2 mx-4">
-                    <p class="mb-0 fw-bold">Responsável pelo Almoxarifado</p>
-                    <p class="small text-muted">Controle de Estoque</p>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="border-top border-dark pt-2 mx-4">
-                    <p class="mb-0 fw-bold">Recebedor / Setor</p>
-                    <p class="small text-muted">{{ mov.setor.nome }}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- RODAPÉ INSTITUCIONAL -->
-        <div class="text-center mt-5 pt-3 border-top small text-muted">
-            <p class="mb-0">Documento gerado eletronicamente pelo Sistema de Gestão de Almoxarifado Municipal.</p>
-        </div>
-    </div>
-
-    <!-- BOTÕES DE AÇÃO (Não aparecem na impressão) -->
-    <div class="text-center mt-4 d-print-none gap-2 d-flex justify-content-center">
-        <button onclick="window.print()" class="btn btn-dark btn-lg px-5 fw-bold shadow">
-            <i class="bi bi-printer"></i> Imprimir Documento Oficial
-        </button>
-        <a href="/produtos/html/lista" class="btn btn-outline-secondary btn-lg px-4">
-            Voltar ao Estoque
-        </a>
-    </div>
+<div class="view-header">
+  <div>
+    <h2 class="page-title">Comprovante de Saída / Requisição</h2>
+    <p class="page-subtitle">Documento oficial formatado com o timbre da Prefeitura de Lagoa do Piauí.</p>
+  </div>
+  <div class="action-buttons">
+    <button class="btn btn-primary" onclick="window.print()">
+      <i data-lucide="printer"></i> Imprimir Documento
+    </button>
+    <a href="/produtos/html/lista" class="btn btn-secondary">
+      <i data-lucide="arrow-left"></i> Voltar ao Catálogo
+    </a>
+  </div>
 </div>
 
-<!-- ESTILO ESPECIAL PARA IMPRESSÃO LIMPA (PAPEL A4) -->
-<style>
-    @media print {
-        body {
-            background-color: #ffffff !important;
-        }
-        .navbar, .d-print-none {
-            display: none !important;
-        }
-        .container {
-            width: 100% !important;
-            max-width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        #folha-termo {
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            width: 100% !important;
-        }
-        @page {
-            size: A4 portrait;
-            margin: 1.5cm;
-        }
+<!-- INÍCIO DO DOCUMENTO OFICIAL A4 -->
+<div id="documento-oficial">
+  
+  <!-- CABEÇALHO OFICIAL (TIMBRE DO PDF ADM2) -->
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 0.5cm; margin-bottom: 1cm;">
+    
+    <!-- LADO ESQUERDO: Texto Oficial -->
+    <div style="flex-grow: 1;">
+      <h3 class="doc-texto" style="font-size: 14pt; font-weight: bold; margin: 0; padding: 0;">ESTADO DO PIAUÍ</h3>
+      <h2 class="doc-texto" style="font-size: 16pt; font-weight: bold; margin: 3px 0 0 0; padding: 0;">PREFEITURA MUNICIPAL DE LAGOA DO PIAUÍ</h2>
+      <h3 class="doc-texto" style="font-size: 14pt; font-weight: normal; margin: 3px 0 8px 0; padding: 0;">Secretaria de Administração</h3>
+      
+      <p class="doc-texto" style="font-size: 10pt; margin: 0; padding: 0;">Avenida José Soares da Silva, 1488, Centro CEP: 64.388-000</p>
+      <p class="doc-texto" style="font-size: 10pt; margin: 2px 0 0 0; padding: 0;">Email: prefeitura.lagoadopi@gmail.com | Site: www.lagoadopiaui.gov.br</p>
+      <p class="doc-texto" style="font-size: 10pt; margin: 2px 0 0 0; padding: 0; font-weight: bold;">CNPJ: 01.612.583/0001-74</p>
+    </div>
+
+    <!-- LADO DIREITO: Logo/Brasão da Prefeitura -->
+    <div style="width: 4cm; text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+      <!-- DICA: Coloque o arquivo 'logo-prefeitura.png' na pasta 'static' -->
+      <img src="/static/brasao.png" alt="Logo Lagoa do Piauí" style="max-width: 100%; max-height: 2.5cm; margin-bottom: 5px; display: none;" id="logo-oficial" onload="this.style.display='block'">
+      <!-- Fallback caso a imagem ainda não exista na pasta -->
+      <div id="logo-placeholder" style="width: 2.5cm; height: 2.5cm; border: 1px dashed #000; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8pt;">
+        Inserir brasao.png na pasta static
+      </div>
+      <p class="doc-texto" style="font-size: 9pt; font-style: italic; margin: 0; text-align: center; width: 100%;">Cuidando do Povo</p>
+    </div>
+  </div>
+
+  <!-- TÍTULO DO DOCUMENTO -->
+  <div style="text-align: center; margin-bottom: 1cm;">
+    <h1 class="doc-texto" style="font-size: 16pt; font-weight: bold; text-decoration: underline; text-transform: uppercase;">Termo de Saída de Materiais</h1>
+  </div>
+
+  <!-- DADOS DA REQUISIÇÃO -->
+  <table class="doc-borda" style="width: 100%; border-collapse: collapse; margin-bottom: 1cm; font-size: 12pt;">
+    <tr>
+      <td style="padding: 0.2cm; border: 1px solid #000; width: 50%;">
+        <strong>Protocolo:</strong> <span id="recibo-protocolo">#{{ mov.id if mov else '—' }}</span>
+      </td>
+      <td style="padding: 0.2cm; border: 1px solid #000; width: 50%;">
+        <strong>Data da Liberação:</strong> <span id="recibo-data-hora">{{ mov.data_movimentacao.strftime('%d/%m/%Y às %H:%M:%S') if mov and mov.data_movimentacao else '—' }}</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 0.2cm; border: 1px solid #000;">
+        <strong>Setor Requisitante:</strong> <span id="recibo-setor">{{ mov.setor.nome if mov and mov.setor else 'Geral' }}</span>
+      </td>
+      <td style="padding: 0.2cm; border: 1px solid #000;">
+        <strong>Nº Requisição (NFE):</strong> <span id="recibo-nfe">{{ mov.nfe if mov and mov.nfe else 'Sem Protocolo' }}</span>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" style="padding: 0.2cm; border: 1px solid #000;">
+        <strong>Servidor Responsável pela Retirada:</strong> <span id="recibo-responsavel">{{ mov.observacao if mov and mov.observacao else 'Servidor Autorizado' }}</span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- DESCRIÇÃO DOS ITENS -->
+  <p class="doc-texto" style="font-size: 12pt; margin-bottom: 0.3cm; font-weight: bold;">Relação de Materiais Fornecidos:</p>
+  
+  <table class="doc-borda" style="width: 100%; border-collapse: collapse; margin-bottom: 1.5cm; font-size: 12pt;">
+    <thead>
+      <tr style="background-color: #f2f2f2;">
+        <th style="padding: 0.2cm; border: 1px solid #000; width: 75%; text-align: left;">Descrição do Material</th>
+        <th style="padding: 0.2cm; border: 1px solid #000; width: 25%; text-align: center;">Qtd.</th>
+      </tr>
+    </thead>
+    <tbody id="recibo-itens-tbody">
+      <!-- Fallback -->
+      <tr>
+        <td style="padding: 0.2cm; border: 1px solid #000;">
+          {{ mov.produto.nome if mov and mov.produto else 'Item de Almoxarifado' }}
+        </td>
+        <td style="padding: 0.2cm; border: 1px solid #000; text-align: center;">
+          {{ mov.quantidade if mov else 0 }} UN
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- TERMO DECLARATÓRIO -->
+  <p class="doc-texto" style="font-size: 12pt; text-align: justify; margin-bottom: 2cm; line-height: 1.5; text-indent: 1.5cm;">
+    Declaro, para os devidos fins legais e administrativos, ter recebido do Almoxarifado Central, vinculado à Secretaria Municipal de Administração da Prefeitura Municipal de Lagoa do Piauí, os materiais e suprimentos descritos neste comprovante. Atesto que os referidos itens foram conferidos no ato da entrega, encontrando-se em perfeitas condições de uso, e destinam-se exclusivamente ao atendimento das atividades inerentes ao setor requisitante.
+  </p>
+
+  <!-- ASSINATURAS -->
+  <div style="display: flex; justify-content: space-between; text-align: center; font-size: 11pt;">
+    <div style="width: 45%;">
+      <div style="border-top: 1px solid #000; margin-bottom: 0.2cm;"></div>
+      <strong class="doc-texto" style="display: block;">Almoxarife Responsável</strong>
+      <span class="doc-texto">Matrícula / Carimbo</span>
+    </div>
+
+    <div style="width: 45%;">
+      <div style="border-top: 1px solid #000; margin-bottom: 0.2cm;"></div>
+      <strong class="doc-texto" style="display: block;">Servidor Requisitante</strong>
+      <span class="doc-texto">Assinatura / CPF</span>
+    </div>
+  </div>
+
+  <div style="margin-top: 2cm; text-align: center; font-size: 11pt;">
+    <p class="doc-texto">Lagoa do Piauí - PI, <span id="data-extenso"></span>.</p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Esconde o placeholder se a imagem carregar
+    const imgLogo = document.getElementById('logo-oficial');
+    if (imgLogo.complete && imgLogo.naturalHeight !== 0) {
+      document.getElementById('logo-placeholder').style.display = 'none';
     }
-</style>
+
+    // Preenche a data por extenso dinamicamente (ex: 24 de agosto de 2026)
+    const meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+    const hoje = new Date();
+    document.getElementById('data-extenso').textContent = `${hoje.getDate()} de ${meses[hoje.getMonth()]} de ${hoje.getFullYear()}`;
+
+    // Recupera os itens consolidados
+    const dadosSalvos = sessionStorage.getItem('ultimo_recibo_saida');
+    if (dadosSalvos) {
+      try {
+        const dados = JSON.parse(dadosSalvos);
+
+        if (dados.dataHoraFormatada) document.getElementById('recibo-data-hora').textContent = dados.dataHoraFormatada;
+        if (dados.setorNome) document.getElementById('recibo-setor').textContent = dados.setorNome;
+        if (dados.nfe) document.getElementById('recibo-nfe').textContent = dados.nfe;
+        if (dados.responsavel) document.getElementById('recibo-responsavel').textContent = dados.responsavel;
+
+        if (dados.itens && dados.itens.length > 0) {
+          const tbody = document.getElementById('recibo-itens-tbody');
+          tbody.innerHTML = dados.itens.map(item => `
+            <tr>
+              <td style="padding: 0.2cm; border: 1px solid #000;">${item.nome}</td>
+              <td style="padding: 0.2cm; border: 1px solid #000; text-align: center;">${item.quantidade} UN</td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) { console.warn(e); }
+    }
+  });
+</script>
 {% endblock %}
