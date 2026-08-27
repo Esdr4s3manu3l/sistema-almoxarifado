@@ -1,5 +1,5 @@
 // =========================================================================
-// CONFIGURAÇÃO DA API
+// CONFIGURAÇÃO DA API E ESTADOS LOCAIS
 // =========================================================================
 
 const API = {
@@ -13,35 +13,40 @@ let produtosList = [];
 let setoresList = [];
 
 // =========================================================================
-// INICIALIZAÇÃO DO SISTEMA
+// INICIALIZAÇÃO DO SISTEMA E EVENTOS GERAIS
 // =========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicializar ícones Lucide
+  // Inicializa os ícones da interface
   if (window.lucide) {
     lucide.createIcons();
   }
 
+  // Controle de Tema (Claro/Escuro)
+  initTheme();
+
   // -----------------------------------------------------------------------
-  // EXCLUSÃO DE PRODUTOS E SETORES
+  // EXCLUSÃO DE PRODUTOS E SETORES (Atualização Instantânea)
   // -----------------------------------------------------------------------
   document.addEventListener('click', (event) => {
+    // Excluir Produto
     const btnProduto = event.target.closest('.btn-deletar-produto');
     if (btnProduto) {
       const id = btnProduto.dataset.id;
-      if (id) deletarProduto(id);
+      if (id) deletarProduto(id, btnProduto);
       return;
     }
 
+    // Excluir Setor
     const btnSetor = event.target.closest('.btn-deletar-setor');
     if (btnSetor) {
       const id = btnSetor.dataset.id;
-      if (id) deletarSetor(id);
+      if (id) deletarSetor(id, btnSetor);
     }
   });
 
   // -----------------------------------------------------------------------
-  // FORMULÁRIOS DE EDIÇÃO
+  // FORMULÁRIOS DE EDIÇÃO (Atualização Silenciosa)
   // -----------------------------------------------------------------------
   const formEditarProduto = document.getElementById('form-editar-produto');
   if (formEditarProduto) {
@@ -64,10 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// =========================================================================
-// CARREGAR TODOS OS DADOS
-// =========================================================================
-
+// Carrega todas as informações ao abrir a tela de Dashboard ou Relatórios
 async function loadAllData() {
   await Promise.all([
     fetchProdutos(),
@@ -80,7 +82,7 @@ async function loadAllData() {
 }
 
 // =========================================================================
-// 1. GESTÃO DE PRODUTOS
+// 1. GESTÃO DE PRODUTOS E ESTOQUE
 // =========================================================================
 
 // IMPORTAR PLANILHA DE PRODUTOS
@@ -98,12 +100,10 @@ async function importarPlanilha(event) {
     });
 
     const data = await res.json();
-
     if (!res.ok) throw new Error(data.detail || 'Erro ao importar planilha.');
 
     alert(data.mensagem || 'Planilha importada com sucesso!');
     await fetchProdutos(); 
-
   } catch (error) {
     alert('Erro na Importação: ' + error.message);
   } finally {
@@ -112,7 +112,7 @@ async function importarPlanilha(event) {
   }
 }
 
-// CARREGAR PRODUTOS
+// BUSCAR PRODUTOS NA API
 async function fetchProdutos() {
   const tbody = document.getElementById('inventory-table-body');
   const criticalContainer = document.getElementById('critical-items-container');
@@ -124,6 +124,7 @@ async function fetchProdutos() {
 
     produtosList = await res.json();
 
+    // Preenche o Select na tela de Entrada/Saída
     if (selectProdutos) {
       selectProdutos.innerHTML = '<option value="" disabled selected>Selecione o produto...</option>' +
         produtosList.map(produto => {
@@ -182,7 +183,7 @@ function renderInventoryTable(items) {
   if (window.lucide) lucide.createIcons();
 }
 
-// RENDERIZAR PRODUTOS COM ESTOQUE CRÍTICO
+// RENDERIZAR PAINEL DE ALERTA DE ESTOQUE CRÍTICO
 function renderCriticalItems(items) {
   const container = document.getElementById('critical-items-container');
   if (!container) return;
@@ -219,16 +220,40 @@ function renderCriticalItems(items) {
   }).join('');
 }
 
-// CADASTRAR NOVO PRODUTO
+// CADASTRAR NOVO PRODUTO (Instantâneo / Otimista)
 async function salvarNovoProduto(event) {
   event.preventDefault();
-  const formData = new FormData(event.target);
+  const form = event.target;
+  const formData = new FormData(form);
+  
   const payload = {
     nome: formData.get('nome'),
     categoria: formData.get('categoria') || null,
     descricao: formData.get('descricao') || null,
     estoque_minimo: parseInt(formData.get('estoque_minimo')) || 0
   };
+
+  form.reset(); // Limpa a tela instantaneamente
+
+  // Cria linha fantasma indicando carregamento
+  const tbody = document.getElementById('inventory-table-body');
+  const tempId = "temp-" + Date.now();
+  if (tbody && tbody.innerHTML.includes('Nenhum produto')) tbody.innerHTML = '';
+  if (tbody) {
+    const tr = document.createElement('tr');
+    tr.id = tempId;
+    tr.style.opacity = "0.5";
+    tr.innerHTML = `
+      <td class="code-col">Gerando...</td>
+      <td><strong>${payload.nome}</strong><span class="subtext">${payload.categoria || 'Geral'}</span></td>
+      <td>0 UN</td>
+      <td>${payload.estoque_minimo}</td>
+      <td>Almoxarifado</td>
+      <td><span class="badge badge-warning">Salvando...</span></td>
+      <td></td>
+    `;
+    tbody.prepend(tr);
+  }
 
   try {
     const res = await fetch('/produtos/', {
@@ -237,16 +262,16 @@ async function salvarNovoProduto(event) {
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erro ao cadastrar produto.');
-    }
-    alert('Produto cadastrado com sucesso!');
-    window.location.href = '/produtos/html/lista';
-  } catch (error) { alert('Erro: ' + error.message); }
+    if (!res.ok) throw new Error('Erro ao cadastrar produto.');
+    fetchProdutos(); // Atualiza a tabela com o ID real sem piscar a tela
+
+  } catch (error) { 
+    alert('Erro: ' + error.message); 
+    if (document.getElementById(tempId)) document.getElementById(tempId).remove();
+  }
 }
 
-// ATUALIZAR PRODUTO
+// ATUALIZAR PRODUTO (Silencioso)
 async function atualizarProduto(form, produtoId) {
   const formData = new FormData(form);
   const payload = {
@@ -263,18 +288,22 @@ async function atualizarProduto(form, produtoId) {
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erro ao atualizar produto.');
-    }
-    alert('Produto atualizado com sucesso!');
-    window.location.href = '/produtos/html/lista';
+    if (!res.ok) throw new Error('Erro ao atualizar produto.');
+    
+    // Fecha modal (se houver algum aberto no CSS) e recarrega a tabela
+    const modal = document.querySelector('.modal.show'); 
+    if(modal) modal.classList.remove('show');
+    fetchProdutos();
+
   } catch (error) { alert('Erro: ' + error.message); }
 }
 
-// EXCLUIR PRODUTO
-async function deletarProduto(produtoId) {
+// EXCLUIR PRODUTO (Instantâneo)
+async function deletarProduto(produtoId, btnElement) {
   if (!confirm(`Deseja realmente remover o produto #${produtoId}?`)) return;
+
+  const linha = btnElement.closest('tr');
+  if (linha) linha.remove(); // Remove na tela antes de ir no servidor
 
   try {
     const res = await fetch(`/produtos/${produtoId}`, { method: 'DELETE' });
@@ -282,17 +311,35 @@ async function deletarProduto(produtoId) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Erro ao excluir produto.');
     }
-    alert('Produto removido com sucesso!');
-    await fetchProdutos();
-  } catch (error) { alert('Erro: ' + error.message); }
+    fetchProdutos(); // Sincroniza em segundo plano
+  } catch (error) { 
+    alert('Erro: ' + error.message); 
+    fetchProdutos(); // Se der erro, desfaz a exclusão visual
+  }
 }
 
+// Handler genérico do form HTML de produto
 async function handleProdutoSubmit(event) { return salvarNovoProduto(event); }
 
+// FILTRO DE BUSCA (Barra de Pesquisa)
+function filterInventoryTable() {
+  const input = document.getElementById('inventory-search');
+  if (!input) return;
+
+  const query = input.value.toLowerCase().trim();
+  const produtosFiltrados = produtosList.filter(produto => {
+    const texto = `${produto.codigo || ''} ${produto.nome || ''} ${produto.categoria || ''} ${produto.descricao || ''} ${produto.localizacao || ''}`.toLowerCase();
+    return texto.includes(query);
+  });
+  renderInventoryTable(produtosFiltrados);
+}
+
+
 // =========================================================================
-// 2. GESTÃO DE MOVIMENTAÇÕES
+// 2. GESTÃO DE MOVIMENTAÇÕES E SAÍDAS
 // =========================================================================
 
+// BUSCAR HISTÓRICO DE MOVIMENTAÇÕES
 async function fetchMovimentacoes() {
   const tbody = document.getElementById('transactions-table-body');
   if (!tbody) return;
@@ -333,6 +380,7 @@ async function fetchMovimentacoes() {
   }
 }
 
+// ENVIAR ENTRADA/SAÍDA SIMPLES
 async function enviarMovimentacao(event, tipo) {
   event.preventDefault();
   const form = event.target;
@@ -375,9 +423,7 @@ async function enviarMovimentacao(event, tipo) {
   } catch (error) { alert('Erro de Validação:\n' + error.message); }
 }
 
-// ==========================================
-// MÚLTIPLOS ITENS NA SAÍDA COM DATA/HORA EXATA
-// ==========================================
+// SAÍDA DE MÚLTIPLOS ITENS COM RECIBO
 function adicionarLinhaItem() {
   const container = document.getElementById('linhas-produtos-container');
   const templateOptions = document.getElementById('select-produtos-template').innerHTML;
@@ -484,6 +530,45 @@ async function enviarSaidaMultipla(event) {
   }
 }
 
+// IMPORTAR PLANILHA DE HISTÓRICO ANTIGO DE SAÍDAS
+async function importarHistoricoSaidas(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('arquivo', file);
+
+  try {
+    alert("Iniciando importação... Isso pode levar alguns segundos dependendo do tamanho da planilha.");
+    
+    const res = await fetch('/movimentacoes/importar-historico', {
+      method: 'POST',
+      body: formData 
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail || 'Erro ao importar histórico.');
+    }
+
+    if (data.erros && data.erros.length > 0) {
+      console.warn("Erros na importação de histórico:", data.erros);
+      alert(data.mensagem + "\n\nAVISO: Alguns itens não foram importados pois não existiam no catálogo. Aperte F12 para ver a lista no console.");
+    } else {
+      alert(data.mensagem);
+    }
+    
+    window.location.reload(); // Recarrega para desenhar a tabela e gráficos
+
+  } catch (error) {
+    alert('Erro na Importação do Histórico: ' + error.message);
+  } finally {
+    event.target.value = '';
+  }
+}
+
+
 // =========================================================================
 // 3. GESTÃO DE SETORES
 // =========================================================================
@@ -526,10 +611,33 @@ async function fetchSetores() {
   } catch (error) { console.warn('Erro ao carregar setores:', error); }
 }
 
+// CADASTRAR NOVO SETOR (Instantâneo / Otimista)
 async function salvarNovoSetor(event) {
   event.preventDefault();
-  const formData = new FormData(event.target);
-  const payload = { nome: formData.get('nome'), secretaria: formData.get('secretaria') || null };
+  const form = event.target;
+  const formData = new FormData(form);
+  const payload = { 
+    nome: formData.get('nome'), 
+    secretaria: formData.get('secretaria') || null 
+  };
+
+  form.reset(); // Limpa a tela instantaneamente
+
+  const tbody = document.getElementById('sectors-table-body');
+  const tempId = "temp-" + Date.now();
+  if (tbody && tbody.innerHTML.includes('Nenhum setor')) tbody.innerHTML = '';
+  if (tbody) {
+    const tr = document.createElement('tr');
+    tr.id = tempId;
+    tr.style.opacity = "0.5";
+    tr.innerHTML = `
+      <td>...</td>
+      <td><strong>${payload.nome}</strong></td>
+      <td>${payload.secretaria || '—'}</td>
+      <td class="text-right"><span class="badge badge-warning">Salvando...</span></td>
+    `;
+    tbody.prepend(tr);
+  }
 
   try {
     const res = await fetch('/setores/', {
@@ -538,19 +646,22 @@ async function salvarNovoSetor(event) {
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erro ao cadastrar setor.');
-    }
-    alert('Setor cadastrado com sucesso!');
-    await fetchSetores();
-    event.target.reset();
-  } catch (error) { alert('Erro: ' + error.message); }
+    if (!res.ok) throw new Error('Erro ao cadastrar setor.');
+    fetchSetores(); // Atualiza a tabela invisivelmente
+
+  } catch (error) { 
+    alert('Erro: ' + error.message); 
+    if (document.getElementById(tempId)) document.getElementById(tempId).remove();
+  }
 }
 
+// ATUALIZAR SETOR (Silencioso)
 async function atualizarSetor(form, setorId) {
   const formData = new FormData(form);
-  const payload = { nome: formData.get('nome'), secretaria: formData.get('secretaria') || null };
+  const payload = { 
+    nome: formData.get('nome'), 
+    secretaria: formData.get('secretaria') || null 
+  };
 
   try {
     const res = await fetch(`/setores/${setorId}`, {
@@ -559,47 +670,36 @@ async function atualizarSetor(form, setorId) {
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erro ao atualizar setor.');
-    }
-    alert('Setor atualizado com sucesso!');
-    window.location.href = '/setores/html/cadastro';
+    if (!res.ok) throw new Error('Erro ao atualizar setor.');
+    fetchSetores(); // Não redireciona, apenas atualiza a tela
   } catch (error) { alert('Erro: ' + error.message); }
 }
 
-async function deletarSetor(setorId) {
+// EXCLUIR SETOR (Instantâneo)
+async function deletarSetor(setorId, btnElement) {
   if (!confirm(`Deseja realmente remover o setor #${setorId}?`)) return;
+
+  const linha = btnElement.closest('tr');
+  if (linha) linha.remove(); // Some na tela na hora
 
   try {
     const res = await fetch(`/setores/${setorId}`, { method: 'DELETE' });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Não é possível excluir este setor pois ele possui histórico vinculados.');
+      throw new Error(err.detail || 'Não é possível excluir este setor pois ele possui histórico vinculado.');
     }
-    alert('Setor removido com sucesso!');
-    await fetchSetores();
-  } catch (error) { alert('Erro: ' + error.message); }
+    fetchSetores();
+  } catch (error) { 
+    alert('Erro: ' + error.message); 
+    fetchSetores(); // Desfaz a exclusão em caso de erro
+  }
 }
 
-// =========================================================================
-// 4. FILTRO DE PRODUTOS
-// =========================================================================
-function filterInventoryTable() {
-  const input = document.getElementById('inventory-search');
-  if (!input) return;
 
-  const query = input.value.toLowerCase().trim();
-  const produtosFiltrados = produtosList.filter(produto => {
-    const texto = `${produto.codigo || ''} ${produto.nome || ''} ${produto.categoria || ''} ${produto.descricao || ''} ${produto.localizacao || ''}`.toLowerCase();
-    return texto.includes(query);
-  });
-  renderInventoryTable(produtosFiltrados);
-}
+// =========================================================================
+// 4. CONTROLE DE TEMA (DARK/LIGHT MODE)
+// =========================================================================
 
-// ==========================================
-// CONTROLE DE TEMA E EXTRAS
-// ==========================================
 function initTheme() {
   const themeToggleBtn = document.getElementById('theme-toggle');
   let savedTheme = 'dark';
@@ -629,49 +729,5 @@ function updateThemeIcon(iconName) {
   if (iconElem) {
     iconElem.setAttribute('data-lucide', iconName);
     if (window.lucide) lucide.createIcons();
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  initTheme();
-});
-
-// =========================================================================
-// IMPORTAR PLANILHA DE HISTÓRICO DE SAÍDAS
-// =========================================================================
-async function importarHistoricoSaidas(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const formData = new FormData();
-  formData.append('arquivo', file);
-
-  try {
-    alert("Iniciando importação... Isso pode levar alguns segundos dependendo do tamanho da planilha.");
-    
-    const res = await fetch('/movimentacoes/importar-historico', {
-      method: 'POST',
-      body: formData 
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.detail || 'Erro ao importar histórico.');
-    }
-
-    if (data.erros && data.erros.length > 0) {
-      console.warn("Erros na importação de histórico:", data.erros);
-      alert(data.mensagem + "\n\nAVISO: Alguns itens não foram importados pois não existiam no catálogo. Aperte F12 para ver a lista no console.");
-    } else {
-      alert(data.mensagem);
-    }
-    
-    window.location.reload();
-
-  } catch (error) {
-    alert('Erro na Importação do Histórico: ' + error.message);
-  } finally {
-    event.target.value = '';
   }
 }
